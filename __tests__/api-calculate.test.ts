@@ -33,7 +33,8 @@ describe('POST /api/calculate', () => {
 
     expect(res.status).toBe(200)
     expect(data.tmc).toBe(0)
-    expect(data.tc).toBe(0)
+    // TC minimum for electric without kW is 77.52 (TC_RATES[4])
+    expect(data.tc).toBe(77.52)
   })
 
   it('retourne 400 si le body est invalide', async () => {

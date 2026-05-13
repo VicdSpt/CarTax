@@ -70,17 +70,21 @@ export function calculateTC({ cc, fuelType, kw }: TCInput): number {
   let cv: number
 
   if (fuelType === 'electric') {
-    if (!kw || kw === 0) return TC_RATES[4]  // minimum if kW unknown
+    if (!kw || kw === 0) return TC_RATES[4]
     cv = Math.max(1, Math.ceil(kw / 7.5))
-  } else {
+  } else if (cc > 0) {
     cv = calculateCV(cc)
+  } else if (kw && kw > 0) {
+    // Fallback approximation when only kW is known (not precise for Belgian TC)
+    cv = Math.max(1, Math.round(kw / 5.5))
+  } else {
+    return TC_RATES[4]  // minimum if no data
   }
 
   const base = cv > 15
     ? 959.98 + (cv - 15) * 133.00
     : TC_RATES[Math.max(4, cv)]
 
-  // Electric vehicles: no diesel multiplier, no fuel surcharge
   const dieselMultiplier = fuelType === 'diesel' ? 1.25 : 1.0
   return Math.round(base * dieselMultiplier * 100) / 100
 }
@@ -92,9 +96,14 @@ export function calculate(input: {
   co2Norm?: Co2Norm
   kw?: number
 }): TaxResult {
+  const usedKwFallback = input.fuelType !== 'electric' && (input.cc === 0 || !input.cc) && input.kw && input.kw > 0
+
   const cv = input.fuelType === 'electric' && input.kw
     ? Math.max(1, Math.ceil(input.kw / 7.5))
-    : calculateCV(input.cc)
+    : (input.cc > 0 || !input.kw)
+      ? calculateCV(input.cc || 0)
+      : Math.max(1, Math.round(input.kw / 5.5))
+
   const tmc = calculateTMC({ co2: input.co2, fuelType: input.fuelType, co2Norm: input.co2Norm })
   const tc = calculateTC({ cc: input.cc, fuelType: input.fuelType, kw: input.kw })
 
@@ -106,6 +115,8 @@ export function calculate(input: {
     tmcDetail: `Basé sur ${input.co2} g/km CO₂${normLabel}, coefficient ${FUEL_TMC_COEFFICIENT[input.fuelType]}`,
     tcDetail: input.fuelType === 'electric' && input.kw
       ? `${cv} CV fiscaux (${input.kw} kW)`
-      : `${cv} CV fiscaux (${input.cc} cc)${input.fuelType === 'diesel' ? ' + majoration diesel 25%' : ''}`,
+      : usedKwFallback
+        ? `~${cv} CV fiscaux (estimé depuis ${input.kw} kW — résultat approximatif)`
+        : `${cv} CV fiscaux (${input.cc} cc)${input.fuelType === 'diesel' ? ' + majoration diesel 25%' : ''}`,
   }
 }

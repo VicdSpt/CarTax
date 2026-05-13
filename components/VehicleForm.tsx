@@ -116,7 +116,7 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
 
       <input
         type="number"
-        placeholder="Cylindrée (cc)"
+        placeholder={form.kw > 0 ? 'Cylindrée (cc) — optionnel si kW connu' : 'Cylindrée (cc)'}
         value={form.cc || ''}
         onChange={e => setForm(f => ({ ...f, cc: Number(e.target.value) }))}
         min={0}
@@ -130,20 +130,23 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
         </p>
       )}
 
-      {form.fuelType === 'electric' && (
-        <>
-          <input
-            type="number"
-            placeholder="Puissance (kW)"
-            value={form.kw || ''}
-            onChange={e => setForm(f => ({ ...f, kw: Number(e.target.value) }))}
-            min={0}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
-          />
-          <p className="text-xs text-gray-400 -mt-1">
-            Valeur case P2 de votre carte grise (en kW).
-          </p>
-        </>
+      <input
+        type="number"
+        placeholder="Puissance (kW)"
+        value={form.kw || ''}
+        onChange={e => setForm(f => ({ ...f, kw: Number(e.target.value) }))}
+        min={0}
+        className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+      />
+      <p className="text-xs text-gray-400 -mt-1">
+        {form.fuelType === 'electric'
+          ? 'Valeur case P2 de votre carte grise (en kW). Utilisé pour calculer la TC.'
+          : 'Valeur case P2 de votre carte grise (en kW). Utilisé si la cylindrée est inconnue.'}
+      </p>
+      {form.fuelType !== 'electric' && form.cc === 0 && form.kw > 0 && (
+        <p className="text-xs text-amber-600 -mt-1">
+          ⚠ TC calculée depuis les kW — résultat approximatif. Entrez la cylindrée pour plus de précision.
+        </p>
       )}
 
       <button

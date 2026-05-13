@@ -69,6 +69,21 @@ describe('calculateTMC — NEDC norm', () => {
   })
 })
 
+describe('calculateTC — fallback kW pour thermique', () => {
+  it('utilise kW si cc=0 pour estimer les CV fiscaux', () => {
+    // 150 kW → round(150/5.5) = 27 CV → 959.98 + (27-15)*133 = 959.98 + 1596 = 2555.98
+    expect(calculateTC({ cc: 0, fuelType: 'gasoline', kw: 150 })).toBeCloseTo(2555.98, 1)
+  })
+  it('préfère cc sur kW si les deux sont fournis', () => {
+    const withCc = calculateTC({ cc: 1600, fuelType: 'gasoline' })
+    const withBoth = calculateTC({ cc: 1600, fuelType: 'gasoline', kw: 150 })
+    expect(withCc).toBe(withBoth)
+  })
+  it('retourne le tarif minimum si cc=0 et kW=0', () => {
+    expect(calculateTC({ cc: 0, fuelType: 'gasoline', kw: 0 })).toBe(77.52)
+  })
+})
+
 describe('calculateTC — véhicule électrique avec kW', () => {
   it('calcule la TC pour un électrique de 150kW (20 CV)', () => {
     // cv = ceil(150/7.5) = 20 → 959.98 + (20-15)*133 = 959.98 + 665 = 1624.98
