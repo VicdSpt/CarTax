@@ -39,6 +39,12 @@ export default function TaxResult({ result, vehicleLabel, accentColor = 'blue' }
         </div>
       </div>
 
+      {result.isOldtimer && (
+        <div className="px-4 py-2 bg-amber-50 border-t border-amber-100 text-xs text-amber-700">
+          <span className="font-semibold">🏛 Oldtimer (plaque O)</span> — usage restreint : occasionnel, domicile-travail ou rassemblements autorisés. Usage commercial interdit.
+        </div>
+      )}
+
       <button
         onClick={() => setShowDetail(v => !v)}
         className="w-full px-4 py-2 text-xs text-gray-500 bg-gray-50 border-t border-gray-100 text-left hover:bg-gray-100 transition-colors"
