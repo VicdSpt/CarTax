@@ -74,6 +74,20 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
         />
       </div>
 
+      {form.fuelType !== 'electric' && (
+        <p className="text-xs text-gray-400 -mt-1">
+          Valeur case V7 de votre carte grise.{' '}
+          <a
+            href="https://www.febiac.be/fr/article/ou-trouver-le-taux-de-co2-exact-de-ma-voiture-a-des-fins-fiscales-wltp-ou-nedc"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-600"
+          >
+            Trouver ma valeur CO₂
+          </a>
+        </p>
+      )}
+
       <input
         type="number"
         placeholder="Cylindrée (cc)"
@@ -83,6 +97,12 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
         className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
         disabled={form.fuelType === 'electric'}
       />
+
+      {form.fuelType !== 'electric' && (
+        <p className="text-xs text-gray-400 -mt-1">
+          Valeur case P1 de votre carte grise (en cm³).
+        </p>
+      )}
 
       <button
         type="submit"
