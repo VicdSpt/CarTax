@@ -94,3 +94,66 @@ describe('calculateTC — véhicule électrique avec kW', () => {
     expect(calculateTC({ cc: 0, fuelType: 'electric' })).toBe(102.96)
   })
 })
+
+describe('calculateTC — moto', () => {
+  it('retourne 0 pour une moto ≤250cc', () => {
+    expect(calculateTC({ cc: 125, fuelType: 'gasoline', vehicleType: 'moto' })).toBe(0)
+    expect(calculateTC({ cc: 250, fuelType: 'gasoline', vehicleType: 'moto' })).toBe(0)
+  })
+  it('retourne 73.00 pour une moto >250cc', () => {
+    expect(calculateTC({ cc: 600, fuelType: 'gasoline', vehicleType: 'moto' })).toBe(73.00)
+    expect(calculateTC({ cc: 1200, fuelType: 'gasoline', vehicleType: 'moto' })).toBe(73.00)
+  })
+})
+
+describe('calculateTMC — moto', () => {
+  it('utilise coefficient 1.0 (comme essence) pour la TMC moto à 120 g/km', () => {
+    // 271.40 + (120-101)*8.70 = 436.70 × 1.0 = 436.70
+    expect(calculateTMC({ co2: 120, fuelType: 'gasoline', vehicleType: 'moto' })).toBeCloseTo(436.70, 1)
+  })
+  it('retourne 0 si co2=0 pour une moto', () => {
+    expect(calculateTMC({ co2: 0, fuelType: 'gasoline', vehicleType: 'moto' })).toBe(0)
+  })
+})
+
+describe('calculateTC — utilitaire', () => {
+  it('retourne le bon tarif pour chaque tranche MMA', () => {
+    expect(calculateTC({ cc: 0, fuelType: 'gasoline', vehicleType: 'utility', mma: 500 })).toBe(46.70)
+    expect(calculateTC({ cc: 0, fuelType: 'gasoline', vehicleType: 'utility', mma: 1000 })).toBe(46.70)
+    expect(calculateTC({ cc: 0, fuelType: 'gasoline', vehicleType: 'utility', mma: 1001 })).toBe(63.76)
+    expect(calculateTC({ cc: 0, fuelType: 'gasoline', vehicleType: 'utility', mma: 1500 })).toBe(63.76)
+    expect(calculateTC({ cc: 0, fuelType: 'gasoline', vehicleType: 'utility', mma: 2000 })).toBe(85.01)
+    expect(calculateTC({ cc: 0, fuelType: 'gasoline', vehicleType: 'utility', mma: 3500 })).toBe(148.76)
+  })
+})
+
+describe('calculateTMC — utilitaire', () => {
+  it('retourne 0 (exonéré) pour un utilitaire', () => {
+    expect(calculateTMC({ co2: 150, fuelType: 'diesel', vehicleType: 'utility' })).toBe(0)
+  })
+})
+
+describe('calculateTC — poids lourd', () => {
+  it('retourne 0 pour un poids lourd (pas de calcul)', () => {
+    expect(calculateTC({ cc: 0, fuelType: 'diesel', vehicleType: 'truck' })).toBe(0)
+  })
+})
+
+describe('calculateTMC — poids lourd', () => {
+  it('retourne 0 pour un poids lourd (pas de calcul)', () => {
+    expect(calculateTMC({ co2: 200, fuelType: 'diesel', vehicleType: 'truck' })).toBe(0)
+  })
+})
+
+describe('oldtimer (plaque O)', () => {
+  it('retourne TMC forfait 61.50 quel que soit le véhicule', () => {
+    expect(calculateTMC({ co2: 200, fuelType: 'gasoline', isOldtimer: true })).toBe(61.50)
+    expect(calculateTMC({ co2: 200, fuelType: 'diesel', isOldtimer: true })).toBe(61.50)
+    expect(calculateTMC({ co2: 0, fuelType: 'gasoline', vehicleType: 'utility', isOldtimer: true })).toBe(61.50)
+  })
+  it('retourne TC forfait 43.30 quel que soit le véhicule', () => {
+    expect(calculateTC({ cc: 4000, fuelType: 'gasoline', isOldtimer: true })).toBe(43.30)
+    expect(calculateTC({ cc: 1600, fuelType: 'diesel', isOldtimer: true })).toBe(43.30)
+    expect(calculateTC({ cc: 0, fuelType: 'gasoline', vehicleType: 'utility', mma: 3500, isOldtimer: true })).toBe(43.30)
+  })
+})

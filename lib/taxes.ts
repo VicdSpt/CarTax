@@ -1,16 +1,22 @@
 export type FuelType = 'gasoline' | 'diesel' | 'hybrid' | 'electric'
 export type Co2Norm = 'wltp' | 'nedc'
+export type VehicleType = 'car' | 'moto' | 'utility' | 'truck'
 
 export interface TMCInput {
   co2: number
   fuelType: FuelType
-  co2Norm?: Co2Norm  // defaults to 'wltp'
+  co2Norm?: Co2Norm
+  vehicleType?: VehicleType
+  isOldtimer?: boolean
 }
 
 export interface TCInput {
   cc: number
   fuelType: FuelType
-  kw?: number  // used for electric vehicles
+  kw?: number
+  vehicleType?: VehicleType
+  mma?: number
+  isOldtimer?: boolean
 }
 
 export interface TaxResult {
@@ -19,6 +25,8 @@ export interface TaxResult {
   cv: number
   tmcDetail: string
   tcDetail: string
+  vehicleType: VehicleType
+  isOldtimer: boolean
 }
 
 const TC_RATES: Record<number, number> = {
@@ -36,9 +44,22 @@ const TC_RATES: Record<number, number> = {
   15: 959.98,
 }
 
-// Brussels 2026 electric flat rates (indexed annually)
-const ELECTRIC_TMC_FLAT = 74.29   // minimum TMC (2024 base, indexed)
-const ELECTRIC_TC_FLAT  = 102.96  // capped TC flat rate
+// Brussels 2026 flat rates (indexed annually)
+const ELECTRIC_TMC_FLAT = 74.29
+const ELECTRIC_TC_FLAT  = 102.96
+const MOTO_TC_FLAT      = 73.00
+const OLDTIMER_TMC      = 61.50
+const OLDTIMER_TC       = 43.30
+
+// [maxMma (inclusive), annualRate]
+const UTILITY_TC_RATES: [number, number][] = [
+  [1000, 46.70],
+  [1500, 63.76],
+  [2000, 85.01],
+  [2500, 106.26],
+  [3000, 127.51],
+  [3500, 148.76],
+]
 
 const FUEL_TMC_COEFFICIENT: Record<FuelType, number> = {
   gasoline: 1.0,
@@ -51,12 +72,9 @@ export function calculateCV(cc: number): number {
   return Math.max(1, Math.round(cc / 200))
 }
 
-export function calculateTMC({ co2, fuelType, co2Norm = 'wltp' }: TMCInput): number {
-  if (fuelType === 'electric') return ELECTRIC_TMC_FLAT
+function tmcFromCo2(co2: number, co2Norm: Co2Norm, fuelType: FuelType): number {
   if (co2 === 0) return 0
-
   const effectiveCo2 = co2Norm === 'nedc' ? Math.round(co2 * 1.21) : co2
-
   let base: number
   if (effectiveCo2 <= 100) {
     base = 61.50 + (effectiveCo2 - 1) * 2.10
@@ -67,28 +85,37 @@ export function calculateTMC({ co2, fuelType, co2Norm = 'wltp' }: TMCInput): num
   } else {
     base = 1521.20 + (effectiveCo2 - 196) * 26.20
   }
-
   return Math.round(base * FUEL_TMC_COEFFICIENT[fuelType] * 100) / 100
 }
 
-export function calculateTC({ cc, fuelType, kw }: TCInput): number {
-  let cv: number
+export function calculateTMC({ co2, fuelType, co2Norm = 'wltp', vehicleType = 'car', isOldtimer = false }: TMCInput): number {
+  if (isOldtimer) return OLDTIMER_TMC
+  if (vehicleType === 'truck' || vehicleType === 'utility') return 0
+  if (fuelType === 'electric') return ELECTRIC_TMC_FLAT
+  if (vehicleType === 'moto') return tmcFromCo2(co2, co2Norm, 'gasoline')
+  return tmcFromCo2(co2, co2Norm, fuelType)
+}
 
-  if (fuelType === 'electric') {
-    return ELECTRIC_TC_FLAT
-  } else if (cc > 0) {
+export function calculateTC({ cc, fuelType, kw, vehicleType = 'car', mma = 0, isOldtimer = false }: TCInput): number {
+  if (isOldtimer) return OLDTIMER_TC
+  if (vehicleType === 'truck') return 0
+  if (vehicleType === 'utility') {
+    return UTILITY_TC_RATES.find(([maxMma]) => mma <= maxMma)?.[1] ?? 148.76
+  }
+  if (vehicleType === 'moto') {
+    return cc <= 250 ? 0 : MOTO_TC_FLAT
+  }
+  // car
+  if (fuelType === 'electric') return ELECTRIC_TC_FLAT
+  let cv: number
+  if (cc > 0) {
     cv = calculateCV(cc)
   } else if (kw && kw > 0) {
-    // Fallback approximation when only kW is known (not precise for Belgian TC)
     cv = Math.max(1, Math.round(kw / 5.5))
   } else {
-    return TC_RATES[4]  // minimum if no data
+    return TC_RATES[4]
   }
-
-  const base = cv > 15
-    ? 959.98 + (cv - 15) * 133.00
-    : TC_RATES[Math.max(4, cv)]
-
+  const base = cv > 15 ? 959.98 + (cv - 15) * 133.00 : TC_RATES[Math.max(4, cv)]
   const dieselMultiplier = fuelType === 'diesel' ? 1.25 : 1.0
   return Math.round(base * dieselMultiplier * 100) / 100
 }
@@ -99,30 +126,57 @@ export function calculate(input: {
   fuelType: FuelType
   co2Norm?: Co2Norm
   kw?: number
+  vehicleType?: VehicleType
+  mma?: number
+  isOldtimer?: boolean
 }): TaxResult {
-  const usedKwFallback = input.fuelType !== 'electric' && (input.cc === 0 || !input.cc) && input.kw && input.kw > 0
+  const vehicleType = input.vehicleType ?? 'car'
+  const isOldtimer = input.isOldtimer ?? false
+  const co2Norm = input.co2Norm ?? 'wltp'
 
-  const cv = input.fuelType === 'electric'
+  const usedKwFallback = vehicleType === 'car'
+    && input.fuelType !== 'electric'
+    && !input.cc
+    && !!input.kw
+
+  const cv = (vehicleType !== 'car' || input.fuelType === 'electric')
     ? 0
-    : (input.cc > 0 || !input.kw)
-      ? calculateCV(input.cc || 0)
-      : Math.max(1, Math.round(input.kw / 5.5))
+    : input.cc > 0
+      ? calculateCV(input.cc)
+      : input.kw
+        ? Math.max(1, Math.round(input.kw / 5.5))
+        : 0
 
-  const tmc = calculateTMC({ co2: input.co2, fuelType: input.fuelType, co2Norm: input.co2Norm })
-  const tc = calculateTC({ cc: input.cc, fuelType: input.fuelType, kw: input.kw })
+  const tmc = calculateTMC({ co2: input.co2, fuelType: input.fuelType, co2Norm, vehicleType, isOldtimer })
+  const tc  = calculateTC({ cc: input.cc, fuelType: input.fuelType, kw: input.kw, vehicleType, mma: input.mma, isOldtimer })
 
-  const normLabel = input.co2Norm === 'nedc' ? ' (NEDC→WLTP ×1.21)' : ''
-  return {
-    tmc,
-    tc,
-    cv,
-    tmcDetail: input.fuelType === 'electric'
-      ? `Forfait électrique Bruxelles (montant minimum indexé)`
-      : `Basé sur ${input.co2} g/km CO₂${normLabel}, coefficient ${FUEL_TMC_COEFFICIENT[input.fuelType]}`,
-    tcDetail: input.fuelType === 'electric'
-      ? `Forfait électrique plafonné Bruxelles 2026`
-      : usedKwFallback
-        ? `~${cv} CV fiscaux (estimé depuis ${input.kw} kW — résultat approximatif)`
-        : `${cv} CV fiscaux (${input.cc} cc)${input.fuelType === 'diesel' ? ' + majoration diesel 25%' : ''}`,
+  const normLabel = co2Norm === 'nedc' ? ' (NEDC→WLTP ×1.21)' : ''
+  let tmcDetail: string
+  let tcDetail: string
+
+  if (isOldtimer) {
+    tmcDetail = `Forfait oldtimer Bruxelles (plaque O)`
+    tcDetail  = `Forfait oldtimer Bruxelles (plaque O)`
+  } else if (vehicleType === 'truck') {
+    tmcDetail = `Poids lourd — consultez Bruxelles Fiscalité`
+    tcDetail  = `Poids lourd — consultez Bruxelles Fiscalité`
+  } else if (vehicleType === 'utility') {
+    tmcDetail = `Utilitaire — TMC exonérée`
+    tcDetail  = `Basé sur MMA ${input.mma ?? 0} kg`
+  } else if (vehicleType === 'moto') {
+    tmcDetail = input.co2 > 0
+      ? `Basé sur ${input.co2} g/km CO₂${normLabel}, coefficient 1.0`
+      : `CO₂ non disponible — TMC = 0`
+    tcDetail  = input.cc <= 250 ? `Moto ≤250cc — TC exonérée` : `Forfait moto Bruxelles 2026`
+  } else if (input.fuelType === 'electric') {
+    tmcDetail = `Forfait électrique Bruxelles (montant minimum indexé)`
+    tcDetail  = `Forfait électrique plafonné Bruxelles 2026`
+  } else {
+    tmcDetail = `Basé sur ${input.co2} g/km CO₂${normLabel}, coefficient ${FUEL_TMC_COEFFICIENT[input.fuelType]}`
+    tcDetail  = usedKwFallback
+      ? `~${cv} CV fiscaux (estimé depuis ${input.kw} kW — résultat approximatif)`
+      : `${cv} CV fiscaux (${input.cc} cc)${input.fuelType === 'diesel' ? ' + majoration diesel 25%' : ''}`
   }
+
+  return { tmc, tc, cv, tmcDetail, tcDetail, vehicleType, isOldtimer }
 }
