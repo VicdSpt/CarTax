@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import Link from 'next/link'
+import NavLink from '@/components/NavLink'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'] })
@@ -18,18 +19,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-6">
             <Link href="/" className="font-bold text-blue-700 text-lg">🚗 TaxeCar</Link>
             <div className="flex gap-2 ml-auto">
-              <Link
-                href="/"
-                className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                Calculateur
-              </Link>
-              <Link
-                href="/comparaison"
-                className="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                Comparaison
-              </Link>
+              <NavLink href="/">Calculateur</NavLink>
+              <NavLink href="/comparaison">Comparaison</NavLink>
             </div>
           </div>
         </nav>
