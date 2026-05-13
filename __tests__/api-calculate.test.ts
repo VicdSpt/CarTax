@@ -41,4 +41,30 @@ describe('POST /api/calculate', () => {
     const res = await POST(req)
     expect(res.status).toBe(400)
   })
+
+  it('retourne la TC correcte pour une moto >250cc', async () => {
+    const req = makeRequest({ co2: 80, cc: 600, fuelType: 'gasoline', vehicleType: 'moto' })
+    const res = await POST(req)
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(data.tc).toBe(73.00)
+  })
+
+  it('retourne TC MMA pour un utilitaire', async () => {
+    const req = makeRequest({ co2: 0, cc: 0, fuelType: 'gasoline', vehicleType: 'utility', mma: 2000 })
+    const res = await POST(req)
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(data.tc).toBe(85.01)
+    expect(data.tmc).toBe(0)
+  })
+
+  it('retourne les forfaits oldtimer', async () => {
+    const req = makeRequest({ co2: 200, cc: 4000, fuelType: 'gasoline', isOldtimer: true })
+    const res = await POST(req)
+    const data = await res.json()
+    expect(res.status).toBe(200)
+    expect(data.tmc).toBe(61.50)
+    expect(data.tc).toBe(43.30)
+  })
 })

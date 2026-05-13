@@ -5,6 +5,13 @@ import VehicleForm, { type VehicleFormData } from '@/components/VehicleForm'
 import TaxResult from '@/components/TaxResult'
 import type { TaxResult as TaxResultType } from '@/lib/taxes'
 
+const VEHICLE_TYPE_LABELS_SHORT: Record<string, string> = {
+  car: 'Voiture',
+  moto: 'Moto',
+  utility: 'Utilitaire',
+  truck: 'Poids lourd',
+}
+
 export default function CalculatorPage() {
   const [result, setResult] = useState<TaxResultType | null>(null)
   const [loading, setLoading] = useState(false)
@@ -18,12 +25,21 @@ export default function CalculatorPage() {
       const res = await fetch('/api/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ co2: data.co2, cc: data.cc, fuelType: data.fuelType, co2Norm: data.co2Norm, kw: data.kw }),
+        body: JSON.stringify({
+          co2: data.co2,
+          cc: data.cc,
+          fuelType: data.fuelType,
+          co2Norm: data.co2Norm,
+          kw: data.kw,
+          vehicleType: data.vehicleType,
+          mma: data.mma,
+          isOldtimer: data.isOldtimer,
+        }),
       })
       if (!res.ok) throw new Error()
       const json = await res.json()
       setResult(json)
-      setVehicleLabel(`Véhicule ${data.year}`)
+      setVehicleLabel(`${VEHICLE_TYPE_LABELS_SHORT[data.vehicleType] ?? 'Véhicule'} ${data.year}`)
     } catch {
       setError('Erreur lors du calcul. Vérifie les valeurs saisies.')
     } finally {
