@@ -37,7 +37,7 @@ export default function ComparaisonPage() {
         result,
         loading: false,
         error: '',
-        label: data.make ? `${data.make} ${data.model} ${data.year}` : `Véhicule A ${data.year}`,
+        label: `Véhicule A ${data.year}`,
       })
     } catch {
       setVehicleA(s => ({ ...s, loading: false, error: 'Erreur de calcul.' }))
@@ -52,7 +52,7 @@ export default function ComparaisonPage() {
         result,
         loading: false,
         error: '',
-        label: data.make ? `${data.make} ${data.model} ${data.year}` : `Véhicule B ${data.year}`,
+        label: `Véhicule B ${data.year}`,
       })
     } catch {
       setVehicleB(s => ({ ...s, loading: false, error: 'Erreur de calcul.' }))

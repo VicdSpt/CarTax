@@ -23,9 +23,7 @@ export default function CalculatorPage() {
       if (!res.ok) throw new Error()
       const json = await res.json()
       setResult(json)
-      setVehicleLabel(
-        data.make ? `${data.make} ${data.model} ${data.year}` : `Véhicule ${data.year}`
-      )
+      setVehicleLabel(`Véhicule ${data.year}`)
     } catch {
       setError('Erreur lors du calcul. Vérifie les valeurs saisies.')
     } finally {
