@@ -92,6 +92,7 @@ export function calculateTMC({ co2, fuelType, co2Norm = 'wltp', vehicleType = 'c
   if (isOldtimer) return OLDTIMER_TMC
   if (vehicleType === 'truck' || vehicleType === 'utility') return 0
   if (fuelType === 'electric') return ELECTRIC_TMC_FLAT
+  // Motos always use the gasoline coefficient (1.0) per Brussels TMC rules
   if (vehicleType === 'moto') return tmcFromCo2(co2, co2Norm, 'gasoline')
   return tmcFromCo2(co2, co2Norm, fuelType)
 }
@@ -100,7 +101,7 @@ export function calculateTC({ cc, fuelType, kw, vehicleType = 'car', mma = 0, is
   if (isOldtimer) return OLDTIMER_TC
   if (vehicleType === 'truck') return 0
   if (vehicleType === 'utility') {
-    return UTILITY_TC_RATES.find(([maxMma]) => mma <= maxMma)?.[1] ?? 148.76
+    return UTILITY_TC_RATES.find(([maxMma]) => mma <= maxMma)?.[1] ?? UTILITY_TC_RATES.at(-1)![1]
   }
   if (vehicleType === 'moto') {
     return cc <= 250 ? 0 : MOTO_TC_FLAT

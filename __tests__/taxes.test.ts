@@ -1,4 +1,4 @@
-import { calculateTMC, calculateTC, calculateCV } from '@/lib/taxes'
+import { calculateTMC, calculateTC, calculateCV, calculate } from '@/lib/taxes'
 
 describe('calculateCV', () => {
   it('retourne 1 pour une cylindrée très petite', () => {
@@ -142,6 +142,34 @@ describe('calculateTC — poids lourd', () => {
 describe('calculateTMC — poids lourd', () => {
   it('retourne 0 pour un poids lourd (pas de calcul)', () => {
     expect(calculateTMC({ co2: 200, fuelType: 'diesel', vehicleType: 'truck' })).toBe(0)
+  })
+})
+
+describe('calculate() — intégration nouveaux types', () => {
+  it('calcule correctement pour une moto >250cc', () => {
+    const result = calculate({ co2: 120, cc: 600, fuelType: 'gasoline', vehicleType: 'moto' })
+    expect(result.tc).toBe(73.00)
+    expect(result.tmc).toBeCloseTo(436.70, 1)
+    expect(result.vehicleType).toBe('moto')
+    expect(result.isOldtimer).toBe(false)
+    expect(result.tcDetail).toBe('Forfait moto Bruxelles 2026')
+  })
+
+  it('calcule correctement pour un utilitaire', () => {
+    const result = calculate({ co2: 0, cc: 0, fuelType: 'gasoline', vehicleType: 'utility', mma: 2000 })
+    expect(result.tc).toBe(85.01)
+    expect(result.tmc).toBe(0)
+    expect(result.vehicleType).toBe('utility')
+    expect(result.tmcDetail).toBe('Utilitaire — TMC exonérée')
+    expect(result.tcDetail).toBe('Basé sur MMA 2000 kg')
+  })
+
+  it('applique les forfaits oldtimer via calculate()', () => {
+    const result = calculate({ co2: 200, cc: 4000, fuelType: 'gasoline', vehicleType: 'car', isOldtimer: true })
+    expect(result.tmc).toBe(61.50)
+    expect(result.tc).toBe(43.30)
+    expect(result.isOldtimer).toBe(true)
+    expect(result.tmcDetail).toBe('Forfait oldtimer Bruxelles (plaque O)')
   })
 })
 
