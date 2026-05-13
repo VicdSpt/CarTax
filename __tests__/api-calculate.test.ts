@@ -26,15 +26,14 @@ describe('POST /api/calculate', () => {
     expect(typeof data.tc).toBe('number')
   })
 
-  it('retourne 0 pour un véhicule électrique', async () => {
+  it('retourne les forfaits Bruxelles pour un véhicule électrique', async () => {
     const req = makeRequest({ co2: 0, cc: 0, fuelType: 'electric' })
     const res = await POST(req)
     const data = await res.json()
 
     expect(res.status).toBe(200)
-    expect(data.tmc).toBe(0)
-    // TC minimum for electric without kW is 77.52 (TC_RATES[4])
-    expect(data.tc).toBe(77.52)
+    expect(data.tmc).toBe(74.29)  // forfait minimum TMC électrique Bruxelles 2026
+    expect(data.tc).toBe(102.96)  // forfait plafonné TC électrique Bruxelles 2026
   })
 
   it('retourne 400 si le body est invalide', async () => {

@@ -13,8 +13,8 @@ describe('calculateCV', () => {
 })
 
 describe('calculateTMC', () => {
-  it('retourne 0 pour un véhicule électrique', () => {
-    expect(calculateTMC({ co2: 0, fuelType: 'electric' })).toBe(0)
+  it('retourne le forfait minimum pour un véhicule électrique', () => {
+    expect(calculateTMC({ co2: 0, fuelType: 'electric' })).toBe(74.29)
   })
   it('retourne 0 pour co2=0 même en essence', () => {
     expect(calculateTMC({ co2: 0, fuelType: 'gasoline' })).toBe(0)
@@ -39,7 +39,7 @@ describe('calculateTMC', () => {
 
 describe('calculateTC', () => {
   it('retourne le tarif minimum pour un électrique sans kW', () => {
-    expect(calculateTC({ cc: 0, fuelType: 'electric' })).toBe(77.52)
+    expect(calculateTC({ cc: 0, fuelType: 'electric' })).toBe(102.96)
   })
   it('retourne le tarif ≤4cv pour une petite cylindrée', () => {
     expect(calculateTC({ cc: 600, fuelType: 'gasoline' })).toBe(77.52)
@@ -85,16 +85,12 @@ describe('calculateTC — fallback kW pour thermique', () => {
 })
 
 describe('calculateTC — véhicule électrique avec kW', () => {
-  it('calcule la TC pour un électrique de 150kW (20 CV)', () => {
-    // cv = ceil(150/7.5) = 20 → 959.98 + (20-15)*133 = 959.98 + 665 = 1624.98
-    expect(calculateTC({ cc: 0, fuelType: 'electric', kw: 150 })).toBeCloseTo(1624.98, 1)
-  })
-  it('retourne le tarif minimum si kW est 0 ou absent', () => {
-    expect(calculateTC({ cc: 0, fuelType: 'electric', kw: 0 })).toBe(77.52)
-    expect(calculateTC({ cc: 0, fuelType: 'electric' })).toBe(77.52)
-  })
-  it('calcule pour un petit électrique 50kW (7 CV)', () => {
-    // cv = ceil(50/7.5) = 7 → TC_RATES[7] = 198.19
-    expect(calculateTC({ cc: 0, fuelType: 'electric', kw: 50 })).toBe(198.19)
+  it('retourne le forfait plafonné Bruxelles quelle que soit la puissance', () => {
+    // Bruxelles 2026 : TC électrique = forfait ~102.96€ (non basé sur kW)
+    expect(calculateTC({ cc: 0, fuelType: 'electric', kw: 150 })).toBe(102.96)
+    expect(calculateTC({ cc: 0, fuelType: 'electric', kw: 202 })).toBe(102.96)
+    expect(calculateTC({ cc: 0, fuelType: 'electric', kw: 50 })).toBe(102.96)
+    expect(calculateTC({ cc: 0, fuelType: 'electric', kw: 0 })).toBe(102.96)
+    expect(calculateTC({ cc: 0, fuelType: 'electric' })).toBe(102.96)
   })
 })

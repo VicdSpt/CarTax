@@ -36,6 +36,10 @@ const TC_RATES: Record<number, number> = {
   15: 959.98,
 }
 
+// Brussels 2026 electric flat rates (indexed annually)
+const ELECTRIC_TMC_FLAT = 74.29   // minimum TMC (2024 base, indexed)
+const ELECTRIC_TC_FLAT  = 102.96  // capped TC flat rate
+
 const FUEL_TMC_COEFFICIENT: Record<FuelType, number> = {
   gasoline: 1.0,
   diesel: 1.15,
@@ -48,7 +52,8 @@ export function calculateCV(cc: number): number {
 }
 
 export function calculateTMC({ co2, fuelType, co2Norm = 'wltp' }: TMCInput): number {
-  if (fuelType === 'electric' || co2 === 0) return 0
+  if (fuelType === 'electric') return ELECTRIC_TMC_FLAT
+  if (co2 === 0) return 0
 
   const effectiveCo2 = co2Norm === 'nedc' ? Math.round(co2 * 1.21) : co2
 
@@ -70,8 +75,7 @@ export function calculateTC({ cc, fuelType, kw }: TCInput): number {
   let cv: number
 
   if (fuelType === 'electric') {
-    if (!kw || kw === 0) return TC_RATES[4]
-    cv = Math.max(1, Math.ceil(kw / 7.5))
+    return ELECTRIC_TC_FLAT
   } else if (cc > 0) {
     cv = calculateCV(cc)
   } else if (kw && kw > 0) {
@@ -98,8 +102,8 @@ export function calculate(input: {
 }): TaxResult {
   const usedKwFallback = input.fuelType !== 'electric' && (input.cc === 0 || !input.cc) && input.kw && input.kw > 0
 
-  const cv = input.fuelType === 'electric' && input.kw
-    ? Math.max(1, Math.ceil(input.kw / 7.5))
+  const cv = input.fuelType === 'electric'
+    ? 0
     : (input.cc > 0 || !input.kw)
       ? calculateCV(input.cc || 0)
       : Math.max(1, Math.round(input.kw / 5.5))
@@ -112,9 +116,11 @@ export function calculate(input: {
     tmc,
     tc,
     cv,
-    tmcDetail: `Basé sur ${input.co2} g/km CO₂${normLabel}, coefficient ${FUEL_TMC_COEFFICIENT[input.fuelType]}`,
-    tcDetail: input.fuelType === 'electric' && input.kw
-      ? `${cv} CV fiscaux (${input.kw} kW)`
+    tmcDetail: input.fuelType === 'electric'
+      ? `Forfait électrique Bruxelles (montant minimum indexé)`
+      : `Basé sur ${input.co2} g/km CO₂${normLabel}, coefficient ${FUEL_TMC_COEFFICIENT[input.fuelType]}`,
+    tcDetail: input.fuelType === 'electric'
+      ? `Forfait électrique plafonné Bruxelles 2026`
       : usedKwFallback
         ? `~${cv} CV fiscaux (estimé depuis ${input.kw} kW — résultat approximatif)`
         : `${cv} CV fiscaux (${input.cc} cc)${input.fuelType === 'diesel' ? ' + majoration diesel 25%' : ''}`,
