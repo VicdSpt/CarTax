@@ -34,6 +34,7 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
     co2Norm: 'wltp',
     kw: 0,
   })
+  const [showNormTooltip, setShowNormTooltip] = useState(false)
 
   const accent = accentColor === 'green'
     ? 'bg-emerald-600 hover:bg-emerald-700'
@@ -77,6 +78,41 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
                 {norm.toUpperCase()}
               </button>
             ))}
+          </div>
+
+          {/* Info tooltip */}
+          <div className="relative">
+            <button
+              type="button"
+              onMouseEnter={() => setShowNormTooltip(true)}
+              onMouseLeave={() => setShowNormTooltip(false)}
+              onClick={() => setShowNormTooltip(v => !v)}
+              className="w-5 h-5 rounded-full bg-gray-200 text-gray-500 text-xs font-bold hover:bg-gray-300 transition-colors flex items-center justify-center"
+              aria-label="Explication WLTP et NEDC"
+            >
+              ?
+            </button>
+
+            {showNormTooltip && (
+              <div className="absolute left-0 top-7 z-20 w-72 bg-white border border-gray-200 rounded-xl shadow-lg p-4 text-xs text-gray-600 leading-relaxed">
+                <p className="font-semibold text-gray-800 mb-2">WLTP vs NEDC — quelle différence ?</p>
+                <p className="mb-2">
+                  Ce sont deux méthodes de mesure des émissions CO₂ des véhicules.
+                </p>
+                <p className="mb-2">
+                  <span className="font-medium text-gray-800">WLTP</span> (depuis 2021) — méthode actuelle, plus réaliste. Les valeurs sont plus élevées car les tests sont plus proches des conditions réelles de conduite.
+                </p>
+                <p className="mb-2">
+                  <span className="font-medium text-gray-800">NEDC</span> (avant 2021) — ancienne méthode, valeurs généralement 15–25% plus basses que WLTP pour le même véhicule.
+                </p>
+                <p className="mb-2">
+                  Bruxelles utilise la valeur <span className="font-medium text-gray-800">WLTP</span> pour calculer la TMC depuis le 1er janvier 2021.
+                </p>
+                <p className="text-gray-400">
+                  💡 Vérifiez la case V7 de votre carte grise pour savoir quelle norme s'applique à votre véhicule.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
