@@ -152,7 +152,7 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
 
       <input
         type="number"
-        placeholder={form.kw > 0 ? 'Cylindrée (cc) — optionnel si kW connu' : 'Cylindrée (cc)'}
+        placeholder={form.kw > 0 ? 'Cylindrée ex: 2000 pour 2.0L (optionnel si kW connu)' : 'Cylindrée ex: 2000 pour 2.0L'}
         value={form.cc || ''}
         onChange={e => setForm(f => ({ ...f, cc: Number(e.target.value) }))}
         min={0}
