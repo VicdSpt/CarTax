@@ -53,7 +53,7 @@ export function calculateTMC({ co2, fuelType }: TMCInput): number {
   } else if (co2 <= 145) {
     base = 271.40 + (co2 - 101) * 8.70
   } else if (co2 <= 195) {
-    base = 652.20 + (co2 - 146) * 17.40
+    base = 654.20 + (co2 - 146) * 17.40
   } else {
     base = 1521.20 + (co2 - 196) * 26.20
   }

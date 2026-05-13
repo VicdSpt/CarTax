@@ -4,6 +4,7 @@ import { useState } from 'react'
 import VehicleForm, { type VehicleFormData } from '@/components/VehicleForm'
 import TaxResult from '@/components/TaxResult'
 import type { TaxResult as TaxResultType } from '@/lib/taxes'
+import { formatEur } from '@/lib/format'
 
 interface VehicleState {
   result: TaxResultType | null
@@ -22,10 +23,6 @@ async function fetchTaxes(data: VehicleFormData): Promise<TaxResultType> {
   })
   if (!res.ok) throw new Error()
   return res.json()
-}
-
-function formatEur(amount: number) {
-  return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR' }).format(amount)
 }
 
 export default function ComparaisonPage() {

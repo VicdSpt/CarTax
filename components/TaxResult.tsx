@@ -2,15 +2,12 @@
 
 import { useState } from 'react'
 import type { TaxResult as TaxResultType } from '@/lib/taxes'
+import { formatEur } from '@/lib/format'
 
 interface Props {
   result: TaxResultType
   vehicleLabel?: string
   accentColor?: 'blue' | 'green'
-}
-
-function formatEur(amount: number) {
-  return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR' }).format(amount)
 }
 
 export default function TaxResult({ result, vehicleLabel, accentColor = 'blue' }: Props) {

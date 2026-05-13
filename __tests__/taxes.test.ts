@@ -30,6 +30,11 @@ describe('calculateTMC', () => {
     // 61.50 + (80-1) * 2.10 = 61.50 + 165.90 = 227.40
     expect(calculateTMC({ co2: 80, fuelType: 'hybrid' })).toBeCloseTo(227.40 * 0.75, 1)
   })
+  it('est continu à la frontière 145-146 g/km (co2=146 >= co2=145)', () => {
+    const at145 = calculateTMC({ co2: 145, fuelType: 'gasoline' })
+    const at146 = calculateTMC({ co2: 146, fuelType: 'gasoline' })
+    expect(at146).toBeGreaterThanOrEqual(at145)
+  })
 })
 
 describe('calculateTC', () => {
