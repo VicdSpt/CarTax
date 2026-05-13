@@ -70,7 +70,7 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
                 onClick={() => setForm(f => ({ ...f, co2Norm: norm }))}
                 className={`px-3 py-1.5 font-medium transition-colors ${
                   form.co2Norm === norm
-                    ? 'bg-blue-700 text-white'
+                    ? `${accent} text-white`
                     : 'bg-white text-gray-600 hover:bg-gray-50'
                 }`}
               >
