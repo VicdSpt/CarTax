@@ -1,13 +1,16 @@
 export type FuelType = 'gasoline' | 'diesel' | 'hybrid' | 'electric'
+export type Co2Norm = 'wltp' | 'nedc'
 
 export interface TMCInput {
   co2: number
   fuelType: FuelType
+  co2Norm?: Co2Norm  // defaults to 'wltp'
 }
 
 export interface TCInput {
   cc: number
   fuelType: FuelType
+  kw?: number  // used for electric vehicles
 }
 
 export interface TaxResult {
@@ -44,34 +47,40 @@ export function calculateCV(cc: number): number {
   return Math.max(1, Math.round(cc / 200))
 }
 
-export function calculateTMC({ co2, fuelType }: TMCInput): number {
+export function calculateTMC({ co2, fuelType, co2Norm = 'wltp' }: TMCInput): number {
   if (fuelType === 'electric' || co2 === 0) return 0
 
+  const effectiveCo2 = co2Norm === 'nedc' ? Math.round(co2 * 1.21) : co2
+
   let base: number
-  if (co2 <= 100) {
-    base = 61.50 + (co2 - 1) * 2.10
-  } else if (co2 <= 145) {
-    base = 271.40 + (co2 - 101) * 8.70
-  } else if (co2 <= 195) {
-    base = 654.20 + (co2 - 146) * 17.40
+  if (effectiveCo2 <= 100) {
+    base = 61.50 + (effectiveCo2 - 1) * 2.10
+  } else if (effectiveCo2 <= 145) {
+    base = 271.40 + (effectiveCo2 - 101) * 8.70
+  } else if (effectiveCo2 <= 195) {
+    base = 654.20 + (effectiveCo2 - 146) * 17.40
   } else {
-    base = 1521.20 + (co2 - 196) * 26.20
+    base = 1521.20 + (effectiveCo2 - 196) * 26.20
   }
 
   return Math.round(base * FUEL_TMC_COEFFICIENT[fuelType] * 100) / 100
 }
 
-export function calculateTC({ cc, fuelType }: TCInput): number {
-  if (fuelType === 'electric') return 0
+export function calculateTC({ cc, fuelType, kw }: TCInput): number {
+  let cv: number
 
-  const cv = calculateCV(cc)
-  let base: number
-  if (cv > 15) {
-    base = 959.98 + (cv - 15) * 133.00
+  if (fuelType === 'electric') {
+    if (!kw || kw === 0) return TC_RATES[4]  // minimum if kW unknown
+    cv = Math.max(1, Math.ceil(kw / 7.5))
   } else {
-    base = TC_RATES[Math.max(4, cv)]
+    cv = calculateCV(cc)
   }
 
+  const base = cv > 15
+    ? 959.98 + (cv - 15) * 133.00
+    : TC_RATES[Math.max(4, cv)]
+
+  // Electric vehicles: no diesel multiplier, no fuel surcharge
   const dieselMultiplier = fuelType === 'diesel' ? 1.25 : 1.0
   return Math.round(base * dieselMultiplier * 100) / 100
 }
@@ -80,16 +89,23 @@ export function calculate(input: {
   co2: number
   cc: number
   fuelType: FuelType
+  co2Norm?: Co2Norm
+  kw?: number
 }): TaxResult {
-  const cv = calculateCV(input.cc)
-  const tmc = calculateTMC({ co2: input.co2, fuelType: input.fuelType })
-  const tc = calculateTC({ cc: input.cc, fuelType: input.fuelType })
+  const cv = input.fuelType === 'electric' && input.kw
+    ? Math.max(1, Math.ceil(input.kw / 7.5))
+    : calculateCV(input.cc)
+  const tmc = calculateTMC({ co2: input.co2, fuelType: input.fuelType, co2Norm: input.co2Norm })
+  const tc = calculateTC({ cc: input.cc, fuelType: input.fuelType, kw: input.kw })
 
+  const normLabel = input.co2Norm === 'nedc' ? ' (NEDC→WLTP ×1.21)' : ''
   return {
     tmc,
     tc,
     cv,
-    tmcDetail: `Basé sur ${input.co2} g/km CO₂, coefficient ${FUEL_TMC_COEFFICIENT[input.fuelType]}`,
-    tcDetail: `${cv} CV fiscaux (${input.cc} cc)${input.fuelType === 'diesel' ? ' + majoration diesel 25%' : ''}`,
+    tmcDetail: `Basé sur ${input.co2} g/km CO₂${normLabel}, coefficient ${FUEL_TMC_COEFFICIENT[input.fuelType]}`,
+    tcDetail: input.fuelType === 'electric' && input.kw
+      ? `${cv} CV fiscaux (${input.kw} kW)`
+      : `${cv} CV fiscaux (${input.cc} cc)${input.fuelType === 'diesel' ? ' + majoration diesel 25%' : ''}`,
   }
 }

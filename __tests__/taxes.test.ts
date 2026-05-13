@@ -38,8 +38,8 @@ describe('calculateTMC', () => {
 })
 
 describe('calculateTC', () => {
-  it('retourne 0 pour un véhicule électrique', () => {
-    expect(calculateTC({ cc: 0, fuelType: 'electric' })).toBe(0)
+  it('retourne le tarif minimum pour un électrique sans kW', () => {
+    expect(calculateTC({ cc: 0, fuelType: 'electric' })).toBe(77.52)
   })
   it('retourne le tarif ≤4cv pour une petite cylindrée', () => {
     expect(calculateTC({ cc: 600, fuelType: 'gasoline' })).toBe(77.52)
@@ -53,5 +53,33 @@ describe('calculateTC', () => {
   it('calcule correctement pour plus de 15cv', () => {
     // 16cv : 959.98 + 133.00 = 1092.98
     expect(calculateTC({ cc: 3200, fuelType: 'gasoline' })).toBeCloseTo(1092.98, 1)
+  })
+})
+
+describe('calculateTMC — NEDC norm', () => {
+  it('applique le coefficient NEDC (×1.21) pour 100 g/km NEDC', () => {
+    // effectiveCo2 = round(100 * 1.21) = 121 → bracket 101-145
+    // 271.40 + (121-101) * 8.70 = 271.40 + 174.00 = 445.40
+    expect(calculateTMC({ co2: 100, fuelType: 'gasoline', co2Norm: 'nedc' })).toBeCloseTo(445.40, 1)
+  })
+  it('WLTP par défaut (pas de co2Norm) donne le même résultat que co2Norm: wltp', () => {
+    const withDefault = calculateTMC({ co2: 120, fuelType: 'gasoline' })
+    const withWltp = calculateTMC({ co2: 120, fuelType: 'gasoline', co2Norm: 'wltp' })
+    expect(withDefault).toBe(withWltp)
+  })
+})
+
+describe('calculateTC — véhicule électrique avec kW', () => {
+  it('calcule la TC pour un électrique de 150kW (20 CV)', () => {
+    // cv = ceil(150/7.5) = 20 → 959.98 + (20-15)*133 = 959.98 + 665 = 1624.98
+    expect(calculateTC({ cc: 0, fuelType: 'electric', kw: 150 })).toBeCloseTo(1624.98, 1)
+  })
+  it('retourne le tarif minimum si kW est 0 ou absent', () => {
+    expect(calculateTC({ cc: 0, fuelType: 'electric', kw: 0 })).toBe(77.52)
+    expect(calculateTC({ cc: 0, fuelType: 'electric' })).toBe(77.52)
+  })
+  it('calcule pour un petit électrique 50kW (7 CV)', () => {
+    // cv = ceil(50/7.5) = 7 → TC_RATES[7] = 198.19
+    expect(calculateTC({ cc: 0, fuelType: 'electric', kw: 50 })).toBe(198.19)
   })
 })

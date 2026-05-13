@@ -1,13 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import type { FuelType } from '@/lib/taxes'
+import type { FuelType, Co2Norm } from '@/lib/taxes'
 
 export interface VehicleFormData {
   fuelType: FuelType
   year: number
   co2: number
   cc: number
+  co2Norm: Co2Norm
+  kw: number
 }
 
 interface Props {
@@ -29,6 +31,8 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
     year: new Date().getFullYear(),
     co2: 0,
     cc: 0,
+    co2Norm: 'wltp',
+    kw: 0,
   })
 
   const accent = accentColor === 'green'
@@ -54,6 +58,28 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
           <option key={val} value={val}>{label}</option>
         ))}
       </select>
+
+      {form.fuelType !== 'electric' && (
+        <div className="flex gap-2 items-center">
+          <span className="text-xs text-gray-500 whitespace-nowrap">Norme CO₂ :</span>
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden text-sm">
+            {(['wltp', 'nedc'] as Co2Norm[]).map(norm => (
+              <button
+                key={norm}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, co2Norm: norm }))}
+                className={`px-3 py-1.5 font-medium transition-colors ${
+                  form.co2Norm === norm
+                    ? 'bg-blue-700 text-white'
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                {norm.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-2">
         <select
@@ -102,6 +128,22 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
         <p className="text-xs text-gray-400 -mt-1">
           Valeur case P1 de votre carte grise (en cm³).
         </p>
+      )}
+
+      {form.fuelType === 'electric' && (
+        <>
+          <input
+            type="number"
+            placeholder="Puissance (kW)"
+            value={form.kw || ''}
+            onChange={e => setForm(f => ({ ...f, kw: Number(e.target.value) }))}
+            min={0}
+            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-gray-400 -mt-1">
+            Valeur case P2 de votre carte grise (en kW).
+          </p>
+        </>
       )}
 
       <button

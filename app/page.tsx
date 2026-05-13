@@ -18,7 +18,7 @@ export default function CalculatorPage() {
       const res = await fetch('/api/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ co2: data.co2, cc: data.cc, fuelType: data.fuelType }),
+        body: JSON.stringify({ co2: data.co2, cc: data.cc, fuelType: data.fuelType, co2Norm: data.co2Norm, kw: data.kw }),
       })
       if (!res.ok) throw new Error()
       const json = await res.json()
