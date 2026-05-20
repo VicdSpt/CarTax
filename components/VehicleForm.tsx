@@ -83,6 +83,26 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
   const showYear = form.vehicleType !== 'truck'
   const showOldtimer = form.vehicleType !== 'truck' && isOldtimerEligible
 
+  const validationError: string | null = (() => {
+    if (form.isOldtimer) return null
+    if (form.vehicleType === 'car' && form.fuelType !== 'electric') {
+      if (form.cc === 0 && form.kw === 0) {
+        return 'Entrez la cylindrée (case P1) ou la puissance en kW (case P2) pour calculer la TC.'
+      }
+    }
+    if (form.vehicleType === 'moto') {
+      if (form.cc === 0) {
+        return 'Entrez la cylindrée (case P1) — nécessaire pour savoir si votre moto est exonérée (≤ 250cc) ou non.'
+      }
+    }
+    if (form.vehicleType === 'utility') {
+      if (form.mma === 0) {
+        return 'Entrez la MMA (case F1 ou F2) pour calculer la taxe de circulation.'
+      }
+    }
+    return null
+  })()
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       {/* Vehicle type */}
@@ -208,12 +228,16 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
           {showMma && (
             <input
               type="number"
-              placeholder="MMA (kg)"
+              placeholder="MMA (kg) *"
               value={form.mma || ''}
               onChange={e => setForm(f => ({ ...f, mma: Number(e.target.value) }))}
               min={0}
               max={3500}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+              className={`border rounded-lg px-3 py-2 text-sm ${
+                !form.isOldtimer && form.mma === 0
+                  ? 'border-red-300 bg-red-50'
+                  : 'border-gray-300'
+              }`}
             />
           )}
         </div>
@@ -268,14 +292,18 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
         <>
           <input
             type="number"
-            placeholder={form.kw > 0 ? 'Cylindrée ex: 2000 pour 2.0L (optionnel si kW connu)' : 'Cylindrée ex: 2000 pour 2.0L'}
+            placeholder={form.vehicleType === 'moto' ? 'Cylindrée ex: 600 (cm³) *' : form.kw > 0 ? 'Cylindrée ex: 2000 pour 2.0L (optionnel si kW connu)' : 'Cylindrée ex: 2000 pour 2.0L'}
             value={form.cc || ''}
             onChange={e => {
               const cc = Number(e.target.value)
               setForm(f => ({ ...f, cc, ...(co2Unknown ? { co2: estimateCo2(cc, f.fuelType) } : {}) }))
             }}
             min={0}
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm"
+            className={`border rounded-lg px-3 py-2 text-sm ${
+              form.vehicleType === 'moto' && !form.isOldtimer && form.cc === 0
+                ? 'border-red-300 bg-red-50'
+                : 'border-gray-300'
+            }`}
           />
           <p className="text-xs text-gray-400 -mt-1">Valeur case P1 de votre carte grise (en cm³).</p>
         </>
@@ -323,13 +351,20 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
 
       {/* Submit */}
       {form.vehicleType !== 'truck' && (
-        <button
-          type="submit"
-          disabled={loading}
-          className={`py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 ${accent}`}
-        >
-          {loading ? 'Calcul...' : 'Calculer mes taxes'}
-        </button>
+        <>
+          {validationError && (
+            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              {validationError}
+            </p>
+          )}
+          <button
+            type="submit"
+            disabled={loading || !!validationError}
+            className={`py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 ${accent}`}
+          >
+            {loading ? 'Calcul...' : 'Calculer mes taxes'}
+          </button>
+        </>
       )}
     </form>
   )
