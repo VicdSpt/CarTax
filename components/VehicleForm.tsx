@@ -360,9 +360,16 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
           <button
             type="submit"
             disabled={loading || !!validationError}
-            className={`py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 ${accent}`}
+            aria-busy={!!loading}
+            className={`inline-flex items-center justify-center gap-2 py-2 text-white rounded-lg text-sm font-medium disabled:opacity-50 ${loading ? 'cursor-wait' : ''} ${accent}`}
           >
-            {loading ? 'Calcul...' : 'Calculer mes taxes'}
+            {loading && (
+              <svg data-testid="submit-spinner" className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+                <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round" className="opacity-75" />
+              </svg>
+            )}
+            {loading ? 'Calcul en cours…' : 'Calculer mes taxes'}
           </button>
         </>
       )}

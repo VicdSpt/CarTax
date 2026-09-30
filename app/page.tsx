@@ -4,6 +4,7 @@ import { useState } from 'react'
 import VehicleForm, { type VehicleFormData } from '@/components/VehicleForm'
 import TaxResult from '@/components/TaxResult'
 import type { TaxResult as TaxResultType } from '@/lib/taxes'
+import { withMinDuration } from '@/lib/delay'
 
 const VEHICLE_TYPE_LABELS_SHORT: Record<string, string> = {
   car: 'Voiture',
@@ -22,7 +23,7 @@ export default function CalculatorPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/calculate', {
+      const res = await withMinDuration(fetch('/api/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -35,7 +36,7 @@ export default function CalculatorPage() {
           mma: data.mma,
           isOldtimer: data.isOldtimer,
         }),
-      })
+      }))
       if (!res.ok) throw new Error()
       const json = await res.json()
       setResult(json)
