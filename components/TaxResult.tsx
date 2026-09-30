@@ -30,7 +30,7 @@ export default function TaxResult({ result, vehicleLabel, accentColor = 'blue' }
         <div className="p-4 border-r border-gray-100">
           <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">TMC</div>
           <div className="text-2xl font-bold text-slate-800">{formatEur(result.tmc)}</div>
-          <div className="text-xs text-gray-400 mt-1">Taxe unique d'immatriculation</div>
+          <div className="text-xs text-gray-400 mt-1">Taxe unique d&apos;immatriculation</div>
         </div>
         <div className="p-4">
           <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">TC annuelle</div>

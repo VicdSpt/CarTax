@@ -121,7 +121,7 @@ export default function VehicleForm({ onSubmit, loading, accentColor = 'blue' }:
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
           <p className="font-medium mb-1">Poids lourd ({'>'} 3,5T)</p>
           <p className="text-xs leading-relaxed">
-            Le calcul de la taxe de circulation pour les poids lourds dépend du nombre d'essieux et du type de suspension — ces données ne sont pas publiées publiquement.
+            Le calcul de la taxe de circulation pour les poids lourds dépend du nombre d&apos;essieux et du type de suspension — ces données ne sont pas publiées publiquement.
           </p>
           <a
             href="https://fisc.brussels"
