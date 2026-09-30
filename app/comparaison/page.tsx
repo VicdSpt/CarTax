@@ -5,6 +5,7 @@ import VehicleForm, { type VehicleFormData } from '@/components/VehicleForm'
 import TaxResult from '@/components/TaxResult'
 import type { TaxResult as TaxResultType } from '@/lib/taxes'
 import { formatEur } from '@/lib/format'
+import { withMinDuration } from '@/lib/delay'
 
 interface VehicleState {
   result: TaxResultType | null
@@ -41,7 +42,7 @@ export default function ComparaisonPage() {
   async function handleSubmitA(data: VehicleFormData) {
     setVehicleA(s => ({ ...s, loading: true, error: '' }))
     try {
-      const result = await fetchTaxes(data)
+      const result = await withMinDuration(fetchTaxes(data))
       setVehicleA({
         result,
         loading: false,
@@ -56,7 +57,7 @@ export default function ComparaisonPage() {
   async function handleSubmitB(data: VehicleFormData) {
     setVehicleB(s => ({ ...s, loading: true, error: '' }))
     try {
-      const result = await fetchTaxes(data)
+      const result = await withMinDuration(fetchTaxes(data))
       setVehicleB({
         result,
         loading: false,
